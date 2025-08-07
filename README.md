@@ -1,128 +1,149 @@
-# 📊 Stock Streaming Dashboard
+# 📡 Finnhub Streaming Data Pipeline
 
-A real-time stock price streaming dashboard built using **Python**, **Kafka**, **FastAPI**, **PostgreSQL**, and **Plotly Dash**. This project demonstrates a full data engineering pipeline from data ingestion to dashboard visualization using [Finnhub API](https://finnhub.io/).
+A **real-time stock data streaming pipeline** built using **Python**, **Kafka**, **Apache Spark**, **Cassandra**, **Plotly Dash**, and **Grafana**, deployed via **Kubernetes**, **Docker**, and **Terraform**. This project was developed as part of my **master's thesis** focused on **stream processing and distributed data pipelines**.
 
-## 🧠 Overview
+It demonstrates how to build an **end-to-end streaming architecture** with low latency, horizontal scalability, high availability, and real-time dashboard visualization using stock trading data from the [Finnhub API](https://finnhub.io/).
 
-This project simulates a real-time stock market monitoring system by streaming live data through Kafka, processing and storing it in PostgreSQL, and finally visualizing the insights through an interactive dashboard.
+---
 
-## 🔧 Technologies Used
+## 🧠 Project Overview
 
-- **Kafka** – for streaming live stock data
-- **Python** – for producer & consumer logic
-- **FastAPI** – for API creation
-- **PostgreSQL** – as the backend database
-- **Plotly Dash** – for data visualization dashboard
-- **Docker Compose** – to containerize and orchestrate services
+This project simulates a **real-time stock market monitoring system**, streaming data from **Finnhub WebSocket API**, processing it via **Apache Spark Structured Streaming**, storing it in **Apache Cassandra**, and finally visualizing it with **Grafana dashboards**.
 
-## 📦 Features
+All microservices are **containerized with Docker**, orchestrated with **Kubernetes**, and managed using **Terraform** for infrastructure-as-code.
 
-- Stream live stock prices from Finnhub
-- Publish & subscribe using Kafka
-- Store data into PostgreSQL
-- Visualize data using Plotly Dash (daily closing prices, volume, price trendlines)
-- Modular and scalable codebase
-- Dockerized for easy deployment
+---
 
+## ⚙️ Architecture Overview
 
+![Architecture Diagram](finnhub_streaming_data_pipeline_diagram.png) <!-- Optional: replace with your own draw.io export -->
 
+### 🔸 Components:
 
-## Architecture
+- **🔁 Data Ingestion (Producer)**
+  - Python-based app connects to Finnhub WebSocket API
+  - Converts messages to Avro format (as per `schemas/trades.avsc`)
+  - Streams data to Kafka broker
 
-![finnhub_streaming_data_pipeline_diagram drawio (4)](https://user-images.githubusercontent.com/75480707/218998119-12d514ef-8e10-40e7-a638-afaa728e6b4f.png)
+- **📩 Message Broker**
+  - Kafka broker deployed in Kubernetes pod
+  - Kafdrop sidecar container for Kafka UI
+  - Topics initialized via `kafka-setup-k8s.sh`
+  - Zookeeper for Kafka metadata
 
-The diagram above provides a detailed insight into pipeline's architecture. 
+- **⚡ Stream Processing**
+  - Spark Structured Streaming app written in Scala
+  - Runs on Spark-on-Kubernetes via Helm (`spark-k8s-operator`)
+  - Transforms and aggregates real-time trades
+  - Writes to Apache Cassandra
 
-All applications are containerized into **Docker** containers, which are orchestrated by **Kubernetes** - and its infrastructure is managed by **Terraform**.
+- **🗄️ Serving Layer**
+  - Cassandra stores processed data
+  - Schema and tables initialized with `cassandra-setup.cql`
 
-**Data ingestion layer** - a containerized **Python** application called **FinnhubProducer** connects to Finnhub.io websocket. It encodes retrieved messages into Avro format as specified in schemas/trades.avsc file and ingests messages into Kafka broker.
+- **📊 Visualization Layer**
+  - Grafana with [Cassandra plugin](https://github.com/HadesArchitect/GrafanaCassandraDatasource)
+  - Dashboard updates every 500ms
+  - Can be accessed via `kubectl port-forward`
 
-**Message broker layer** - messages from FinnhubProducer are consumed by **Kafka** broker, which is located in kafka-service pod and has **Kafdrop** service as a sidecar ambassador container for Kafka. On a container startup, **kafka-setup-k8s.sh** script runs to create topics. The **Zookeeper** pod is launched before Kafka as it is required for its metadata management.
+---
 
-**Stream processing layer** - a **Spark** Kubernetes cluster based on spark-k8s-operator is deployed using Helm. A **Scala** application called **StreamProcessor** is submitted into Spark cluster manager, that delegates a worker for it. This application connects to Kafka broker to retrieve messages, transform them using Spark Structured Streaming, and loads into Cassandra tables. The first query - that transforms trades into feasible format - runs continuously, whereas the second - with aggregations - has a 5 seconds trigger.
+## 📈 Dashboard Preview
 
-**Serving database layer** - a **Cassandra** database stores & persists data from Spark jobs. Upon launching, the **cassandra-setup.cql** script runs to create keyspace & tables.
+![Dashboard Sample](ezgif_com-crop.gif) <!-- Optional: replace with your own cropped preview gif -->
 
-**Visualization layer** - **Grafana** connects to Cassandra database using HadesArchitect-Cassandra-Plugin and serves visualized data to users as in example of Finnhub Sample BTC Dashboard. The dashboard is refreshed each 500ms.
-
-## Dashboard
-
-![ezgif com-crop](https://user-images.githubusercontent.com/75480707/219054392-5cc6a3e6-b034-4e75-8cb5-3baafe001149.gif)
-
-You can access Grafana with a dashboard on localhost:3000 by running following command:
-```
+> Access the dashboard at `http://localhost:3000` after port-forwarding Grafana:
+```bash
 kubectl port-forward -n pipeline service/grafana 3000:3000
 ```
-You can also modify it for your liking from UI - but if you want to save anything, you will need to export json and load it into Docker image.
-Remember that if you change namespace name in Terraform variables you need to apply it into that command as well.
 
-## Setup & deployment
+---
 
-The application is designed to be deployed on a local Minikube cluster. However, the deployment into EKS/GKE/AKS should be quite straight-forward, with tweaking deployment settings for providers, volumes etc.
+## 🚀 Deployment Instructions
 
-Running the application requires you to have a Finnhub API token. You can retrieve it once you have created a Finnhub account. To include it in final deployment, insert it into proper fields in terraform-k8s/config.tf, along with Cassandra database username & password of choice. While setting Cassandra credentials remember to verify them with Grafana dashboard settings (the issue is referenced in config.tf file).
+This pipeline is designed to run on **Minikube (local Kubernetes cluster)**, but can be easily adapted for **EKS, GKE, or AKS** by updating provider-specific settings.
 
-There is also an old setup that relies solely on docker-compose. To reach that, navigate to the docker-compose-old branch.
+### Prerequisites
 
-I was running this cluster on Windows with Minikube, Helm, Docker Desktop and Terraform pre-installed. I have utilized local Docker registry to apply custom images into deployment. I was launching it with no vtx enabled, using VirtualBox as VM engine. Below attached are scripts that I was running in Powershell in order to run the cluster as intended:
+- Docker Desktop
+- Minikube
+- Helm
+- Terraform
+- PowerShell (for Windows)
 
+### Environment Variables
+
+Before running, set proxy and Docker environment (optional if behind proxy):
+
+```powershell
+set HTTP_PROXY=http://<proxy>
+set HTTPS_PROXY=https://<proxy>
+set NO_PROXY=localhost,127.0.0.1,...
 ```
-set HTTP_PROXY=http://<proxy hostname:port>
-set HTTPS_PROXY=https://<proxy hostname:port>
-set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.59.0/24,192.168.49.0/24,192.168.39.0/24
 
+### Start Minikube
+
+```powershell
 minikube start --no-vtx-check --memory 10240 --cpus 6
+```
 
-minikube docker-env
-set DOCKER_TLS_VERIFY=”1"
-set DOCKER_HOST=”tcp://172.17.0.2:2376"
-set DOCKER_CERT_PATH=”/home/user/.minikube/certs”
-set MINIKUBE_ACTIVE_DOCKERD=”minikube”
+### Setup Docker Env
 
+```powershell
 minikube docker-env | Invoke-Expression
+```
 
+### Build and Deploy
+
+```powershell
 docker-compose -f docker-compose-ci.yaml build --no-cache
-
 cd terraform-k8s
 terraform apply
 ```
 
-## Potential improvements
+### API Keys
 
-There is definitely some room for improvement for the pipeline. The solution itself has some issues at the moment and there are some ideas that would enable its full potential in production:
+Update `terraform-k8s/config.tf` with:
 
-- November 2023 update: deleted SparkOperator image
+- ✅ Your **Finnhub API Token**
+- 🔐 Cassandra username/password
 
-It seems that the SparkOperator image from Google Container Registry is deleted, therefore the pipeline will fail to build. If you would like to run the pipeline on your own, you will need to replace the Spark image first and possibly alter some configuration settings.
+---
 
-- Cloud deployment
+## 🧪 Technologies Used
 
-The pipeline was developed locally on Minikube, but deploying it into one of Kubernetes services of major cloud vendors would massively improve its scalability & reliability. This would be a must-have in real-life commercialized deployment.
+| Layer               | Tools / Technologies                                       |
+|--------------------|------------------------------------------------------------|
+| Data Ingestion      | Python, WebSocket, Avro                                    |
+| Messaging           | Apache Kafka, Kafdrop, Zookeeper                          |
+| Stream Processing   | Apache Spark, Scala, Spark Structured Streaming            |
+| Storage             | Apache Cassandra                                           |
+| Visualization       | Grafana, Grafana-Cassandra Plugin                          |
+| Infrastructure      | Docker, Kubernetes, Helm, Terraform                        |
+| Deployment          | Minikube, Docker Compose (legacy support)                 |
 
-- Developing CI/CD pipeline
+---
 
-The current CI_build.yml file for Github Actions is a remnant of old docker-compose version and setting up CI for Kubernetes & Terraform, along with pipeline testing, would require much more work, which was not necessary for me as I was developing & testing everything locally. However, it would be essential to implement that on a larger scale deployment, along with adding CD for cloud deployment.
+## 🧰 Potential Improvements
 
-- Visualization tool
+Here are some improvements I plan to explore in the future:
 
-Although I have used Grafana for final visualization layer, I would look forward to spend more time implementing other solution as Grafana, especially while using external plugin, has limited capabilities for data analytics. Personally I would recommend to go with open-source BI solution, such as Apache Superset, and spin Cassandra into Presto engine, or develop custom Streamlit app.
+- 🔄 **Fix Spark Operator**: The Google-hosted image was removed; needs replacement
+- ☁️ **Deploy on Cloud**: Migrate to EKS/GKE for scalability
+- 🧪 **Add CI/CD**: Setup CI/CD pipeline for Kubernetes & Terraform
+- 📊 **Alternative Visualization**: Explore Apache Superset or Streamlit
+- 🚥 **StatefulSets for Kafka/Cassandra**: Improve stability and resilience
+- 🌐 **Web UI for Cassandra**: Add a Cassandra web viewer
+- 📦 **Refactor Docker Volumes**: Use `volumeMounts` over copying files into images
 
-- Cassandra initial startup fix
+---
 
-At initial Kubernetes deployment, Cassandra deployment might fail once or twice with PostHookStartErrors. It is most likely related to its gossiping protocol at the startup, and lifecycle->postStart command runs too early. Extending sleep time in postStart command would help to address that, but it would extend startup times later on. Implementing readiness/liveness probe might be helpful for that.
+## 📘 Legacy Support
 
-- Deploying Cassandra & Kafka as StatefulSets
+A `docker-compose-old` branch exists for those wanting to run the pipeline outside of Kubernetes (not recommended for production).
 
-Right now, Cassandra & Kafka are configured to be standard deployments. However, implementing them as StatefulSets would be desired in order to improve their scalability and reliability at scale.
+---
 
-- adding Cassandra Web UI as ambassador
+## 📄 License
 
-Adding some sort of Cassandra Web UI as a sidebar ambassador container to Cassandra deployment would be helpful for operations & log analytics.
-
-- volumeMounts instead of Dockerfiles
-
-For some features, for example Grafana dashboards or Kafka setup script, volumeMounts would be more convenient rather than copying content into Docker image, as it wouldn't enforce rebuilding it.
-
-- code cleanup & further development
-
-There is room to develop more advanced codebase into a project, for example to implement Lambda architecture & batch processing for some use cases, or improve Kubernetes deployment configuration. Some code for applications might also be cleaned up and/or optimized (for example for build.sbt).
+This project is open-source and intended for **educational and personal development purposes**.
