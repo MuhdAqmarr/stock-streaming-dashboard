@@ -1,9 +1,31 @@
-The related master's thesis is shared on Google Drive here:  https://drive.google.com/file/d/17BBSlaHi5MKmo0qygaceogeOweqCWx9n/view?usp=drivesdk
----
-# Finnhub Streaming Data Pipeline
+# 📊 Stock Streaming Dashboard
 
-The project is a streaming data pipeline based on Finnhub.io API/websocket real-time trading data created for a sake of my master's thesis related to stream processing.
-It is designed with a purpose to showcase key aspects of streaming pipeline development & architecture, providing low latency, scalability & availability.
+A real-time stock price streaming dashboard built using **Python**, **Kafka**, **FastAPI**, **PostgreSQL**, and **Plotly Dash**. This project demonstrates a full data engineering pipeline from data ingestion to dashboard visualization using [Finnhub API](https://finnhub.io/).
+
+## 🧠 Overview
+
+This project simulates a real-time stock market monitoring system by streaming live data through Kafka, processing and storing it in PostgreSQL, and finally visualizing the insights through an interactive dashboard.
+
+## 🔧 Technologies Used
+
+- **Kafka** – for streaming live stock data
+- **Python** – for producer & consumer logic
+- **FastAPI** – for API creation
+- **PostgreSQL** – as the backend database
+- **Plotly Dash** – for data visualization dashboard
+- **Docker Compose** – to containerize and orchestrate services
+
+## 📦 Features
+
+- Stream live stock prices from Finnhub
+- Publish & subscribe using Kafka
+- Store data into PostgreSQL
+- Visualize data using Plotly Dash (daily closing prices, volume, price trendlines)
+- Modular and scalable codebase
+- Dockerized for easy deployment
+
+
+
 
 ## Architecture
 
