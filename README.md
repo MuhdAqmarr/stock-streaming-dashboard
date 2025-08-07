@@ -16,8 +16,7 @@ All microservices are **containerized with Docker**, orchestrated with **Kuberne
 
 ## ⚙️ Architecture Overview
 
-![Architecture Diagram](finnhub_streaming_data_pipeline_diagram.png) <!-- Optional: replace with your own draw.io export -->
-
+![Architecture Diagram](data_pipeline_diagram.png)
 ### 🔸 Components:
 
 - **🔁 Data Ingestion (Producer)**
