@@ -1,6 +1,6 @@
 # 📡 Finnhub Streaming Data Pipeline
 
-A **real-time stock data streaming pipeline** built using **Python**, **Kafka**, **Apache Spark**, **Cassandra**, **Plotly Dash**, and **Grafana**, deployed via **Kubernetes**, **Docker**, and **Terraform**. This project was developed as part of my **master's thesis** focused on **stream processing and distributed data pipelines**.
+A **stock data streaming pipeline** built using **Python**, **Kafka**, **Apache Spark**, **Cassandra**, **Plotly Dash**, and **Grafana**, deployed via **Kubernetes**, **Docker**, and **Terraform**. This project was developed as part of my **master's thesis** focused on **stream processing and distributed data pipelines**.
 
 It demonstrates how to build an **end-to-end streaming architecture** with low latency, horizontal scalability, high availability, and real-time dashboard visualization using stock trading data from the [Finnhub API](https://finnhub.io/).
 
@@ -100,13 +100,6 @@ cd terraform-k8s
 terraform apply
 ```
 
-### API Keys
-
-Update `terraform-k8s/config.tf` with:
-
-- ✅ Your **Finnhub API Token**
-- 🔐 Cassandra username/password
-
 ---
 
 ## 🧪 Technologies Used
@@ -136,13 +129,3 @@ Here are some improvements I plan to explore in the future:
 - 📦 **Refactor Docker Volumes**: Use `volumeMounts` over copying files into images
 
 ---
-
-## 📘 Legacy Support
-
-A `docker-compose-old` branch exists for those wanting to run the pipeline outside of Kubernetes (not recommended for production).
-
----
-
-## 📄 License
-
-This project is open-source and intended for **educational and personal development purposes**.
